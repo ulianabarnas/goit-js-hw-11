@@ -16,7 +16,6 @@ export default class ImagesApiService {
     const { data } = await axios.get(`${BASE_URL}?${filters}`);
     console.log(data);
 
-    debugger;
     const totalHits = data.totalHits;
 
     const totalPages = Math.ceil(totalHits / 40);
