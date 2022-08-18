@@ -9,10 +9,7 @@ const refs = getRefs();
 const imagesApiService = new ImagesApiService();
 
 refs.form.addEventListener('submit', onSearchBtn);
-refs.loadMoreBtn.addEventListener('click', () => {
-  const isSerched = false;
-  renderPhotoCard(isSerched);
-});
+refs.loadMoreBtn.addEventListener('click', onLoadMoreBtn);
 
 function onSearchBtn(e) {
   e.preventDefault();
@@ -36,10 +33,10 @@ function onSearchBtn(e) {
 async function renderPhotoCard(isSerched = false) {
   try {
     const data = await imagesApiService.getImages();
-    console.log(data);
+    const { hits, totalHits, page } = data;
     if (data === null) return;
 
-    if (data.hits.length === 0) {
+    if (hits.length === 0) {
       Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
@@ -47,10 +44,10 @@ async function renderPhotoCard(isSerched = false) {
     }
 
     if (isSerched) {
-      Notify.success(`Hooray! We found ${data.totalHits} images.`);
+      Notify.success(`Hooray! We found ${totalHits} images.`);
     }
 
-    const markup = data.hits
+    const markup = hits
       .map(
         ({
           webformatURL,
@@ -83,13 +80,28 @@ async function renderPhotoCard(isSerched = false) {
       .join('');
 
     refs.galleryContainer.insertAdjacentHTML('beforeend', markup);
+
     showLoadMoreBtn();
     new SimpleLightbox('.gallery a', {
       scrollZoom: false,
     });
+
+    if (page * 40 >= totalHits) {
+      hideLoadMoreBtn();
+
+      Notify.failure(
+        "We're sorry, but you've reached the end of search results."
+      );
+    }
   } catch (error) {
     console.log(error);
   }
+}
+
+async function onLoadMoreBtn() {
+  const isSerched = false;
+  await renderPhotoCard(isSerched);
+  smoothScroll();
 }
 
 function clearGalleryContainer() {
@@ -102,4 +114,15 @@ function showLoadMoreBtn() {
 
 function hideLoadMoreBtn() {
   refs.loadMoreBtn.classList.add('is-hidden');
+}
+
+function smoothScroll() {
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
 }
